@@ -1,0 +1,28 @@
+version: '2'
+services:
+  web:
+    image: odoo:10.0
+    container_name: odoo10 
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - /Users/jimruga/code/fictiv-odoo:/mnt/fictiv-addons               # fictiv-addons (currently not mounting)
+      - /Users/jimruga/code/enterprise-odoo/enterprise:/mnt/extra-addons # enterprise
+  db:
+    image: postgres:10
+    container_name: db
+    ports:
+      - "5432:54399" # (currently not exposing this out properly to connect with local client)
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data/pgdata
+volumes:
+  odoo-web-data:
+  odoo-db-data:
