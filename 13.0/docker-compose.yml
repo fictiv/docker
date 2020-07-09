@@ -1,7 +1,7 @@
 version: '2'
 services:
   web:
-    image: fictiv-odoo:13.0
+    image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoo0-dev1-or0 # fictiv-odoo:13.0
     depends_on:
       - db
     ports:
@@ -11,7 +11,7 @@ services:
       - ./config:/etc/odoo
       - ../../fictiv-odoo:/mnt/extra-addons
   db:
-    image: postgres:10
+    image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoodb0-dev1-or0 # postgres:10
     ports:
       - "5432:5432" # (currently not exposing this out properly to connect with local client)
     environment:
