@@ -12,16 +12,16 @@ ARG ODOO_RELEASE=20200220
 
 # Install Odoo Enterprise that Fictiv uses
 USER root
-COPY ./odoo_13.0+e.20200220.deb /tmp/odoo_13.0+e.20200220.deb
+COPY ./odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb
 RUN DEBIAN_FRONTEND=noninteractive \
 	&& apt-get update \
-	&& dpkg --force-overwrite --force-downgrade -i /tmp/odoo_13.0+e.20200220.deb \
+	&& dpkg --force-overwrite --force-downgrade -i /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb \
         && apt-get -y install --no-install-recommends \
             python3-twilio \
             python3-boto3 \
             python3-redis \
  	&& rm -rf /var/lib/apt/lists/* \
- 	&& rm -rf /tmp/odoo_13.0+e.20200220.deb 
+ 	&& rm -rf /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb 
 RUN /usr/bin/python3 -m pip install -U wheel
 RUN /usr/bin/python3 -m pip install -U easypost
 RUN /usr/bin/python3 -m pip install -U gql 
