@@ -12,8 +12,8 @@ services:
       - ../../fictiv-odoo:/mnt/extra-addons
   db:
     image: postgres:10
-#    ports:
-#      - "5432:54399" # (currently not exposing this out properly to connect with local client)
+    ports:
+      - "5432:5432" # (currently not exposing this out properly to connect with local client)
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo
