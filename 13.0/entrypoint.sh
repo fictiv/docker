@@ -8,12 +8,15 @@ set -e
 : ${PORT:=${DB_PORT_5432_TCP_PORT:=5432}}
 : ${USER:=${DB_ENV_POSTGRES_USER:=${POSTGRES_USER:='odoo'}}}
 : ${PASSWORD:=${DB_ENV_POSTGRES_PASSWORD:=${POSTGRES_PASSWORD:='odoo'}}}
+: ${DATABASE:=${DB_ENV_DATABASE:=${DATABASE:='odoo'}}}
+: ${TEMPLATE:=${DB_ENV_TEMPLATE:=${TEMPLATE:='odoo_fictiv_no_data'}}}
+: ${UPGRADE_CMD}:=${ENV_UPGRADE_CMD:=${UPGRADE_CMD:='--workers=1 --max-cron-threads=1 --upgrade all'}}
 
 DB_ARGS=()
 function check_config() {
     param="$1"
     value="$2"
-    if grep -q -E "^\s*\b${param}\b\s*=" "$ODOO_RC" ; then       
+    if grep -q -E "^\s*\b${param}\b\s*=" "$ODOO_RC" ; then
         value=$(grep -E "^\s*\b${param}\b\s*=" "$ODOO_RC" |cut -d " " -f3|sed 's/["\n\r]//g')
     fi;
     DB_ARGS+=("--${param}")
@@ -23,6 +26,9 @@ check_config "db_host" "$HOST"
 check_config "db_port" "$PORT"
 check_config "db_user" "$USER"
 check_config "db_password" "$PASSWORD"
+check_config "db_database" "$DATABASE"
+check_config "db_template" "$TEMPLATE"
+check_config "upgrade_cmd" "$UPGRADE_CMD"
 
 case "$1" in
     -- | odoo)
