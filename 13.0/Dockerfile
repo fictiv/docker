@@ -20,6 +20,9 @@ RUN DEBIAN_FRONTEND=noninteractive \
             python3-twilio \
             python3-boto3 \
             python3-redis \
+            sudo \
+            vim \
+            procps \
  	&& rm -rf /var/lib/apt/lists/* \
  	&& rm -rf /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb 
 RUN /usr/bin/python3 -m pip install -U wheel
