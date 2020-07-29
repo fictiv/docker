@@ -10,7 +10,7 @@ set -e
 : ${PASSWORD:=${DB_ENV_POSTGRES_PASSWORD:=${POSTGRES_PASSWORD:='odoo'}}}
 : ${DATABASE:=${DB_ENV_DATABASE:=${DATABASE:='odoo'}}}
 : ${TEMPLATE:=${DB_ENV_TEMPLATE:=${TEMPLATE:='odoo_fictiv_no_data'}}}
-: ${UPGRADE_CMD}:=${ENV_UPGRADE_CMD:=${UPGRADE_CMD:='--workers=1 --max-cron-threads=1 --upgrade all'}}
+: ${STARTUP_CMD}:=${ENV_STARTUP_CMD:=${STARTUP_CMD:='--upgrade all'}}
 
 DB_ARGS=()
 function check_config() {
@@ -28,7 +28,7 @@ check_config "db_user" "$USER"
 check_config "db_password" "$PASSWORD"
 check_config "db_database" "$DATABASE"
 check_config "db_template" "$TEMPLATE"
-check_config "upgrade_cmd" "$UPGRADE_CMD"
+check_config "startup_cmd" "$STARTUP_CMD"
 
 case "$1" in
     -- | odoo)
