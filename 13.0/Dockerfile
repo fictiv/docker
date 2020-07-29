@@ -20,14 +20,21 @@ RUN DEBIAN_FRONTEND=noninteractive \
             python3-twilio \
             python3-boto3 \
             python3-redis \
+            python3-sh \
             sudo \
             vim \
             procps \
  	&& rm -rf /var/lib/apt/lists/* \
- 	&& rm -rf /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb 
+ 	&& rm -rf /tmp/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.deb
 RUN /usr/bin/python3 -m pip install -U wheel
 RUN /usr/bin/python3 -m pip install -U easypost
-RUN /usr/bin/python3 -m pip install -U gql 
+RUN /usr/bin/python3 -m pip install -U gql
+
+# Replace the base image entrypoint.sh with fictiv entrypoint.sh
+COPY ./entrypoint.sh /entrypoint.sh
+
+# Replace the base image wait-for-psql.py with fictiv wait-for-psql.py
+COPY ./wait-for-psql.py /usr/local/bin/wait-for-psql.py
 
 # Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
 VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
