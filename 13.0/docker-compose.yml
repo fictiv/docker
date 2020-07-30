@@ -9,6 +9,7 @@ services:
     volumes:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
+      - ./sql:/mnt/sql
       - ../../fictiv-odoo:/mnt/extra-addons
   db:
     image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoodb0-dev1-or0 # postgres:10
