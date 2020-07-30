@@ -60,4 +60,23 @@ case "$1" in
         exec "$@"
 esac
 
+export GRAPHQL_ENDPOINT=http://localhost:4000/api/graphql
+# set this to the appropriate value and uncomment before starting containers
+# export GRAPHQL_API_KEY=
+export ODOO_HOST=localhost
+export ODOO_PROTOCOL=http
+export ODOO_PORT=8069
+export ODOO_USER='erp-api@fictiv.com'
+export ODOO_PASS='3DPrinting2014!'
+export ODOO_DB=$DATABASE
+export ODOO_ROOT=http://localhost:8069/xmlrpc/2/
+export LOG_LEVEL=debug
+export S3_EVENT_BUCKET='fictiv-events-dev'
+export S3_EVENT_PATH='events/fictiv-dev/'
+export S3_EVENT_ORDER_PATH='system-v1/order_paid-v1/'
+export S3_PART_BUCKET='fictiv-dev-envs-dev'
+export S3_PART_PATH='localdev/parts/'
+# set this to the appropriate value and uncomment before starting containers
+# export GRAPHIQL_USER_EMAIL=
+
 exit 1
