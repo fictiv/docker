@@ -15,7 +15,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--db_port', required=True)
     arg_parser.add_argument('--db_user', required=True)
     arg_parser.add_argument('--db_password', required=True)
-    arg_parser.add_argument('--db_database', required=False)
+    arg_parser.add_argument('--database', required=False)
+    arg_parser.add_argument('--db-template', required=False)
     arg_parser.add_argument('--timeout', type=int, default=5)
 
     args = arg_parser.parse_args()
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     ]
 
     for database in templates:
-        source = './sql/'+database+'.sql'
+        source = "/mnt/sql/{}.sql".format(database)
         # print("checking {} source file...".format(source))
         try:
             # see if the template database already exists
@@ -88,23 +89,48 @@ if __name__ == '__main__':
 
     # update our local copy of the active odoo database so that the license
     # does not expire. This is also not a fatal error when this update fails.
-    # NOTE: this only runs when a default --db_database is supplied in startup
+    # NOTE: this only runs when a default --database is supplied in startup
     # (e.g. it is supplied in environment var or defined in odoo.conf)
     # If you only use the UI to select your default database, then you must
     # update this yourself!
-    if args.db_database:
+    error = ''
+    if args.database:
         try:
-            conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname=args.db_database)
-            error = ''
-            cur = conn.cursor()
-            cur.execute("UPDATE ir_config_parameter SET VALUE=(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text)::uuid) WHERE KEY='database.uuid'")
-            cur.execute("UPDATE ir_config_parameter SET VALUE=(CURRENT_DATE + INTERVAL '30 day') WHERE KEY='database.expiration_date';")
-            conn.commit()
+            conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname=args.database)
+        except psycopg2.OperationalError as e:
+            # in this case the database does not exist and we should copy it from the template
+            if args.db-template:
+                try:
+                    conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname='postgres')
+                    cur = conn.cursor("CREATE DATABASE {} WITH TEMPLATE {}".format(args.database, args.db-template))
+                    cur.execute()
+                    conn.commit()
+                except psycopg2.OperationalError as e:
+                    error = e
+                    print("Database copy failure, cannot not create {} from template {}: {}".format(args.database, args.db-template, error), file=sys.stderr)
+                    print("Skipping copy, correct the problem or manually create your database through the UI", file=sys.stderr)
+            else:
+                error = "No db-template provided. Can not reset license."
+                print(error, file=sys.stderr)
+        finally:
+            conn.close()
+
+    if not error:
+        try:
+            conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname=args.database)
         except psycopg2.OperationalError as e:
             error = e
-
-    if error:
-        print("Database failure to update odoo database.expiration_date: %s" % error, file=sys.stderr)
-        sys.exit(1)
-    # print("license update completed!")
-    conn.close()
+            print("Database failure to update odoo database.expiration_date: {}".format(error), file=sys.stderr)
+        else:
+            try:
+                cur = conn.cursor()
+                cur.execute("UPDATE ir_config_parameter SET VALUE=(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text)::uuid) WHERE KEY='database.uuid'")
+                cur.execute("UPDATE ir_config_parameter SET VALUE=(CURRENT_DATE + INTERVAL '30 day') WHERE KEY='database.expiration_date';")
+                conn.commit()
+            except psycopg2.OperationalError as e:
+                error = e
+                print("Failed to reset license: {}".format(error), file=sys.stderr)
+                print("Try reseting your license manually if it is required")
+        finally:
+            conn.close()
+            # print("license update completed!")

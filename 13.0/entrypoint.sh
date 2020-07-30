@@ -10,25 +10,37 @@ set -e
 : ${PASSWORD:=${DB_ENV_POSTGRES_PASSWORD:=${POSTGRES_PASSWORD:='odoo'}}}
 : ${DATABASE:=${DB_ENV_DATABASE:=${DATABASE:='odoo'}}}
 : ${TEMPLATE:=${DB_ENV_TEMPLATE:=${TEMPLATE:='odoo_fictiv_no_data'}}}
-: ${STARTUP_CMD}:=${ENV_STARTUP_CMD:=${STARTUP_CMD:='--upgrade all'}}
+: ${UPDATE_ALL}:=${ENV_UPDATE_ALL:=${UPDATE_ALL:='True'}}
 
 DB_ARGS=()
+STARTUP_CMDS=()
 function check_config() {
     param="$1"
     value="$2"
     if grep -q -E "^\s*\b${param}\b\s*=" "$ODOO_RC" ; then
         value=$(grep -E "^\s*\b${param}\b\s*=" "$ODOO_RC" |cut -d " " -f3|sed 's/["\n\r]//g')
     fi;
-    DB_ARGS+=("--${param}")
-    DB_ARGS+=("${value}")
+
+    if [[ "${param}" == *"update_all"* && "${value}" == "True" ]]; then
+        STARTUP_CMDS+=("-u all")
+    elif [[ "${param}" == *"database"* ]]; then
+        DB_ARGS+=("--${param}")
+        DB_ARGS+=("${value}")
+    elif [[ "${param}" == *"db"* ]]; then
+        DB_ARGS+=("--${param}")
+        DB_ARGS+=("${value}")
+    fi;
 }
 check_config "db_host" "$HOST"
 check_config "db_port" "$PORT"
 check_config "db_user" "$USER"
 check_config "db_password" "$PASSWORD"
-check_config "db_database" "$DATABASE"
-check_config "db_template" "$TEMPLATE"
-check_config "startup_cmd" "$STARTUP_CMD"
+check_config "database" "$DATABASE"
+check_config "db-template" "$TEMPLATE"
+check_config "update_all" "$UPDATE_ALL"
+
+echo ${DB_ARGS[@]}
+echo ${STARTUP_CMDS[@]}
 
 case "$1" in
     -- | odoo)
@@ -37,12 +49,12 @@ case "$1" in
             exec odoo "$@"
         else
             wait-for-psql.py ${DB_ARGS[@]} --timeout=30
-            exec odoo "$@" "${DB_ARGS[@]}"
+            exec odoo "$@" "${DB_ARGS[@]}" "${STARTUP_CMDS[@]}"
         fi
         ;;
     -*)
         wait-for-psql.py ${DB_ARGS[@]} --timeout=30
-        exec odoo "$@" "${DB_ARGS[@]}"
+        exec odoo "$@" "${DB_ARGS[@]}" "${STARTUP_CMDS[@]}"
         ;;
     *)
         exec "$@"
