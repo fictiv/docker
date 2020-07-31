@@ -26,9 +26,18 @@ function check_config() {
     elif [[ "${param}" == *"database"* ]]; then
         DB_ARGS+=("--${param}")
         DB_ARGS+=("${value}")
+        STARTUP_CMDS+=("--${param}")
+        STARTUP_CMDS+=("${value}")
+    elif [[ "${param}" == *"db-template"* ]]; then
+        DB_ARGS+=("--db_template")
+        DB_ARGS+=("${value}")
+        STARTUP_CMDS+=("--${param}")
+        STARTUP_CMDS+=("${value}")
     elif [[ "${param}" == *"db"* ]]; then
         DB_ARGS+=("--${param}")
         DB_ARGS+=("${value}")
+        STARTUP_CMDS+=("--${param}")
+        STARTUP_CMDS+=("${value}")
     fi;
 }
 check_config "db_host" "$HOST"
@@ -36,7 +45,7 @@ check_config "db_port" "$PORT"
 check_config "db_user" "$USER"
 check_config "db_password" "$PASSWORD"
 check_config "database" "$DATABASE"
-check_config "db-template" "$TEMPLATE"
+check_config "db-template" "$TEMPLATE" # this is not a typo
 check_config "update_all" "$UPDATE_ALL"
 
 echo ${DB_ARGS[@]}
@@ -49,12 +58,12 @@ case "$1" in
             exec odoo "$@"
         else
             wait-for-psql.py ${DB_ARGS[@]} --timeout=30
-            exec odoo "$@" "${DB_ARGS[@]}" "${STARTUP_CMDS[@]}"
+            exec odoo "$@" "${STARTUP_CMDS[@]}"
         fi
         ;;
     -*)
         wait-for-psql.py ${DB_ARGS[@]} --timeout=30
-        exec odoo "$@" "${DB_ARGS[@]}" "${STARTUP_CMDS[@]}"
+        exec odoo "$@" "${STARTUP_CMDS[@]}"
         ;;
     *)
         exec "$@"
