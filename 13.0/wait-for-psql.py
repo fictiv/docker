@@ -6,7 +6,7 @@ import time
 import os.path
 from os import path
 import sh
-from sh import pg_restore
+from sh import psql
 
 
 if __name__ == '__main__':
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--db_user', required=True)
     arg_parser.add_argument('--db_password', required=True)
     arg_parser.add_argument('--database', required=False)
-    arg_parser.add_argument('--db-template', required=False)
+    arg_parser.add_argument('--db_template', required=False)
     arg_parser.add_argument('--timeout', type=int, default=5)
 
     args = arg_parser.parse_args()
@@ -43,14 +43,24 @@ if __name__ == '__main__':
     conn.close()
 
     # run any db scripts to create template databases for testing
-    # NOTE: if any of these fail we continue and do not stop (e.g no sys.exit)
+
+    # NOTE: if any of these fail we stop here!
     # the assumption is that none of these are critical to the operation of the
-    # main odoo container
+    # main odoo container, however, on exit odoo will resume control and attempt
+    # make sure your main database exists and is operational.
+    # This has consequences when you do not have an existing main database because
+    # odoo will attempt to use the templates that failed to load here in order to
+    # create a new main database -- which of course will fail if these templates
+    # do not exist.
+
+    # NOTE: the template files come from pg_dump and include the
+    # CREATE DATABASE commands in them
+    # TODO: add a template that is pre-loaded with Fusion test data
     # TODO: add a template that is pre-loaded with Cypress test data
     templates = [
         'odoo_base',          # only base open source odoo modules installed
-        'odoo_enterprise',    # base + licensed enterprise modules
-        'odoo_fictiv_no_data' # base + enterprise + fictiv-odoo modules (no data)
+        # 'odoo_enterprise',    # base + licensed enterprise modules
+        # 'odoo_fictiv_no_data' # base + enterprise + fictiv-odoo modules (no data)
     ]
 
     for database in templates:
@@ -64,57 +74,32 @@ if __name__ == '__main__':
             # do nothing if there is no definition sql file
             if path.exists(source):
                 try:
-                    process = subprocess.Popen(
-                        ['pg_restore',
-                         '--no-owner',
-                         '--dbname=postgresql://{}:{}@{}:{}/{}'.format(args.db_user,
+                    sh.psql(
+                        '--dbname=postgresql://{}:{}@{}:{}/{}'.format(args.db_user,
                                                                        args.db_password,
                                                                        args.db_host,
                                                                        args.db_port,
-                                                                       database),
-                         '-v',
-                         source],
-                        stdout=subprocess.PIPE
-                    )
-                    output = process.communicate()[0]
-                    if int(process.returncode) != 0:
-                        print("pg_restore command failed. Return code : {}".format(process.returncode), file=sys.stderr)
-                except Exception as e:
+                                                                       'postgres'),
+                         '-q',
+                         "--file={}".format(source)
+                        )
+                except sh.ErrorReturnCode_2 as e:
                     error = e
-                    print("Database restore failure:  {}".format(error), file=sys.stderr)
+                    print("Database restore failure using {}:  {}".format(source, error), file=sys.stderr)
+                    sys.exit(0)
         else:
             # nothing to do here for this template... move on
             # print("{} connection test completed!".format(database))
             conn.close()
 
     # update our local copy of the active odoo database so that the license
-    # does not expire. This is also not a fatal error when this update fails.
+    # does not expire. This is not a fatal error when this update fails.
+
     # NOTE: this only runs when a default --database is supplied in startup
     # (e.g. it is supplied in environment var or defined in odoo.conf)
     # If you only use the UI to select your default database, then you must
     # update this yourself!
     error = ''
-    if args.database:
-        try:
-            conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname=args.database)
-        except psycopg2.OperationalError as e:
-            # in this case the database does not exist and we should copy it from the template
-            if args.db-template:
-                try:
-                    conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname='postgres')
-                    cur = conn.cursor("CREATE DATABASE {} WITH TEMPLATE {}".format(args.database, args.db-template))
-                    cur.execute()
-                    conn.commit()
-                except psycopg2.OperationalError as e:
-                    error = e
-                    print("Database copy failure, cannot not create {} from template {}: {}".format(args.database, args.db-template, error), file=sys.stderr)
-                    print("Skipping copy, correct the problem or manually create your database through the UI", file=sys.stderr)
-            else:
-                error = "No db-template provided. Can not reset license."
-                print(error, file=sys.stderr)
-        finally:
-            conn.close()
-
     if not error:
         try:
             conn = psycopg2.connect(user=args.db_user, host=args.db_host, port=args.db_port, password=args.db_password, dbname=args.database)
