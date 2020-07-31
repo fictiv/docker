@@ -59,8 +59,8 @@ if __name__ == '__main__':
     # TODO: add a template that is pre-loaded with Cypress test data
     templates = [
         'odoo_base',          # only base open source odoo modules installed
-        # 'odoo_enterprise',    # base + licensed enterprise modules
-        # 'odoo_fictiv_no_data' # base + enterprise + fictiv-odoo modules (no data)
+        'odoo_enterprise',    # base + licensed enterprise modules
+        'odoo_fictiv_no_data' # base + enterprise + fictiv-odoo modules (no data)
     ]
 
     for database in templates:
