@@ -8,8 +8,8 @@ set -e
 : ${PORT:=${DB_PORT_5432_TCP_PORT:=5432}}
 : ${USER:=${DB_ENV_POSTGRES_USER:=${POSTGRES_USER:='odoo'}}}
 : ${PASSWORD:=${DB_ENV_POSTGRES_PASSWORD:=${POSTGRES_PASSWORD:='odoo'}}}
-: ${DATABASE:=${DB_ENV_DATABASE:=${DATABASE:='odoo'}}}
-: ${TEMPLATE:=${DB_ENV_TEMPLATE:=${TEMPLATE:='odoo_fictiv_no_data'}}}
+: ${DATABASE:=${DB_ENV_DATABASE:=${DATABASE:='None'}}}
+: ${TEMPLATE:=${DB_ENV_TEMPLATE:=${TEMPLATE:='None'}}}
 : ${UPDATE_ALL}:=${ENV_UPDATE_ALL:=${UPDATE_ALL:='True'}}
 
 DB_ARGS=()
@@ -22,18 +22,19 @@ function check_config() {
     fi;
 
     if [[ "${param}" == *"update_all"* && "${value}" == "True" ]]; then
+        # update existing db only
         STARTUP_CMDS+=("-u all")
-    elif [[ "${param}" == *"database"* ]]; then
+        # base odoo + enterprise + fictiv
+        # STARTUP_CMDS+=("-i fictiv_application")
+    elif [[ "${param}" == *"database"* && "${value}" != "None"  ]]; then
         DB_ARGS+=("--${param}")
         DB_ARGS+=("${value}")
         STARTUP_CMDS+=("--${param}")
         STARTUP_CMDS+=("${value}")
-    elif [[ "${param}" == *"db-template"* ]]; then
-        DB_ARGS+=("--db_template")
-        DB_ARGS+=("${value}")
-        STARTUP_CMDS+=("--${param}")
+    elif [[ "${param}" == *"db-template"* && "${value}" != "None" ]]; then
+        STARTUP_CMDS+=("--db-template")
         STARTUP_CMDS+=("${value}")
-    elif [[ "${param}" == *"db"* ]]; then
+    elif [[ "${param}" == *"db_"* ]]; then
         DB_ARGS+=("--${param}")
         DB_ARGS+=("${value}")
         STARTUP_CMDS+=("--${param}")
@@ -45,7 +46,7 @@ check_config "db_port" "$PORT"
 check_config "db_user" "$USER"
 check_config "db_password" "$PASSWORD"
 check_config "database" "$DATABASE"
-check_config "db-template" "$TEMPLATE" # this is not a typo
+check_config "db-template" "$TEMPLATE"
 check_config "update_all" "$UPDATE_ALL"
 
 echo ${DB_ARGS[@]}
@@ -58,11 +59,33 @@ case "$1" in
             exec odoo "$@"
         else
             wait-for-psql.py ${DB_ARGS[@]} --timeout=30
+
+            # run any db scripts to create template databases for testing
+            # NOTE: create database command is in the sql template file so it does
+            # not matter where this connection goes
+            exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q --file="/mnt/sql/odoo_base.sql" & (sleep 30) & wait
+            exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c "CREATE DATABASE odoo WITH TEMPLATE odoo_base" & (sleep 5) & wait
+            exec mkdir -p /var/lib/odoo/filestore & (sleep 1) & wait
+            exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo_base & (sleep 5) & wait
+            exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
+            exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
+
             exec odoo "$@" "${STARTUP_CMDS[@]}"
         fi
         ;;
     -*)
         wait-for-psql.py ${DB_ARGS[@]} --timeout=30
+
+        # run any db scripts to create template databases for testing
+        # NOTE: create database command is in the sql template file so it does
+        # not matter where this connection goes
+        exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q --file="/mnt/sql/odoo_base.sql" & (sleep 30) & wait
+        exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c "CREATE DATABASE odoo WITH TEMPLATE odoo_base" & (sleep 5) & wait
+        exec mkdir -p /var/lib/odoo/filestore & (sleep 1) & wait
+        exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo_base & (sleep 5) & wait
+        exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
+        exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
+
         exec odoo "$@" "${STARTUP_CMDS[@]}"
         ;;
     *)
