@@ -92,7 +92,6 @@ case "$1" in
             exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
             exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
         fi
-
         exec odoo "$@" "${STARTUP_CMDS[@]}"
         ;;
     *)
