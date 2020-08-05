@@ -1,7 +1,8 @@
 version: '2'
 services:
   web:
-    image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoo0-dev1-or0 # odoo:13.0
+    # image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoo0-dev1-or0 # odoo:13.0
+    image: fictiv-odoo:13.0
     depends_on:
       - db
     ports:
@@ -10,11 +11,12 @@ services:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
       - ./sql:/mnt/sql
+      - ./odoo-web-data:/mnt/files
       - ../../fictiv-odoo:/mnt/extra-addons
   db:
     image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoodb0-dev1-or0 # postgres:10
     ports:
-      - "5432:5432" # (currently not exposing this out properly to connect with local client)
+      - "5432:5432" # exposing this out properly to connect with local client
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo
@@ -22,6 +24,12 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - odoo-db-data:/var/lib/postgresql/data/pgdata
+  redis:
+    image: bitnami/redis:latest
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
 volumes:
   odoo-web-data:
   odoo-db-data:
