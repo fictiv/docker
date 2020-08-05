@@ -60,6 +60,28 @@ case "$1" in
         else
             wait-for-psql.py ${DB_ARGS[@]} --timeout=30
 
+            # test if base template exists... if not, create it
+            DB_EXISTS=`exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c"\l" | grep -E "(\sodoo_base\s)" | wc -l`
+            if [[ ${DB_EXISTS} == 0 ]]; then
+                # run any db scripts to create template databases for testing
+                # NOTE: create database command is in the sql template file so it does
+                # not matter where this connection goes
+                exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q --file="/mnt/sql/odoo_base.sql" & (sleep 30) & wait
+                exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c "CREATE DATABASE odoo WITH TEMPLATE odoo_base" & (sleep 5) & wait
+                exec mkdir -p /var/lib/odoo/filestore & (sleep 1) & wait
+                exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo_base & (sleep 5) & wait
+                exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
+                exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
+            fi
+            exec odoo "$@" "${STARTUP_CMDS[@]}"
+        fi
+        ;;
+    -*)
+        wait-for-psql.py ${DB_ARGS[@]} --timeout=30
+
+        # test if base template exists... if not, create it
+        DB_EXISTS=`exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c"\l" | grep -E "(\sodoo_base\s)" | wc -l`
+        if [[ ${DB_EXISTS} == 0 ]]; then
             # run any db scripts to create template databases for testing
             # NOTE: create database command is in the sql template file so it does
             # not matter where this connection goes
@@ -69,22 +91,7 @@ case "$1" in
             exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo_base & (sleep 5) & wait
             exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
             exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
-
-            exec odoo "$@" "${STARTUP_CMDS[@]}"
         fi
-        ;;
-    -*)
-        wait-for-psql.py ${DB_ARGS[@]} --timeout=30
-
-        # run any db scripts to create template databases for testing
-        # NOTE: create database command is in the sql template file so it does
-        # not matter where this connection goes
-        exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q --file="/mnt/sql/odoo_base.sql" & (sleep 30) & wait
-        exec psql --dbname=postgres://"$USER":"$PASSWORD"@"$HOST":"$PORT"/postgres -q -c "CREATE DATABASE odoo WITH TEMPLATE odoo_base" & (sleep 5) & wait
-        exec mkdir -p /var/lib/odoo/filestore & (sleep 1) & wait
-        exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo_base & (sleep 5) & wait
-        exec cp -rp /mnt/files/odoo_base /var/lib/odoo/filestore/odoo & (sleep 1) & wait
-        exec chown -R odoo.odoo /var/lib/odoo/filestore & (sleep 1) & wait
 
         exec odoo "$@" "${STARTUP_CMDS[@]}"
         ;;
