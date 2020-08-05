@@ -21,6 +21,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
             python3-boto3 \
             python3-redis \
             python3-sh \
+            redis-server \
             sudo \
             vim \
             procps \
