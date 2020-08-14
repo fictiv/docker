@@ -4,6 +4,7 @@ services:
     image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoo0-dev1-or0 # odoo:13.0
     depends_on:
       - db
+      - redis
     ports:
       - "8069:8069"
     volumes:
