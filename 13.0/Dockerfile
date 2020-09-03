@@ -8,7 +8,7 @@ ENV LANG C.UTF-8
 
 # Install Odoo
 ENV ODOO_VERSION 13.0+e
-ARG ODOO_RELEASE=20200220
+ARG ODOO_RELEASE=20200728
 
 # Install Odoo Enterprise that Fictiv uses
 USER root
