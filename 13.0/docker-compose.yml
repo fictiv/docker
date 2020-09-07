@@ -13,6 +13,8 @@ services:
       - ./sql:/mnt/sql
       - ./odoo-web-data:/mnt/files
       - ../../fictiv-odoo:/mnt/extra-addons
+    env_file:
+      - ./.env
   db:
     image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoodb0-dev1-or0 # postgres:10
     ports:
