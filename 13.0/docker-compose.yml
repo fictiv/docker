@@ -18,7 +18,7 @@ services:
   db:
     image: 754040250767.dkr.ecr.us-west-2.amazonaws.com/odoodb0-dev1-or0 # postgres:10
     ports:
-      - "5432:5432" # exposing this out properly to connect with local client
+      - "5434:5432" # exposing this out properly to connect with local client
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo
@@ -29,7 +29,7 @@ services:
   redis:
     image: bitnami/redis:latest
     ports:
-      - "6379:6379"
+      - "6380:6379"
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
 volumes:
