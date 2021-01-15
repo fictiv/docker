@@ -23,7 +23,7 @@ function check_config() {
 
     if [[ "${param}" == *"update_all"* && "${value}" == "True" ]]; then
         # update existing db only
-        STARTUP_CMDS+=("-u all")
+        STARTUP_CMDS+=("-u fictiv_vendor")
         # base odoo + enterprise + fictiv
         # STARTUP_CMDS+=("-i fictiv_application")
     elif [[ "${param}" == *"database"* && "${value}" != "None"  ]]; then
@@ -49,7 +49,9 @@ check_config "database" "$DATABASE"
 check_config "db-template" "$TEMPLATE"
 check_config "update_all" "$UPDATE_ALL"
 
+echo Printing DB Args
 echo ${DB_ARGS[@]}
+echo Printing Startup commands
 echo ${STARTUP_CMDS[@]}
 
 case "$1" in
@@ -100,7 +102,7 @@ esac
 
 export GRAPHQL_ENDPOINT=http://localhost:4000/api/graphql
 # set this to the appropriate value and uncomment before starting containers
-# export GRAPHQL_API_KEY=
+export GRAPHQL_API_KEY=7877446ecb4215ecaf501227dd58c8f6
 export ODOO_HOST=localhost
 export ODOO_PROTOCOL=http
 export ODOO_PORT=8069
